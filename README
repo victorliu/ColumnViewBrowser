@@ -1,0 +1,30 @@
+A file manager for Windows (and Windows only). Written in C++ with WTL
+as the gui library.
+
+Nothing to see here yet. I just need revision control at the moment to
+keep things in a (mostly) working state.
+
+Ultimately it will look something like this:
+
++---------------------------------------------------------------------+
+| Location bar (possibly with breadcrumbs)                            |
++----------+------------------+-------------------+-------------------+
+|Favorites |Program Files     |7-Zip              |Microsoft Shared   |
+| Documents|Users             |Common Files       |                   |
+| Pictures |Windows           |Internet Explorer  |                   |
+| Old Stuff|                  |                   |                   |
+|          |                  |                   |                   |
+|Drives    |                  |                   |                   |
+| A:       |                  |                   |                   |
+| C:       |                  |                   |                   |
+| D:       |                  |                   |                   |
+| \\Share  |                  |                   |                   |
+|          |                  |                   |                   |
+|          |                  |                   |                   |
+|          |                  |                   |                   |
+|          |                  |                   |                   |
+|          |------------------+-------------------+-------------------|
+|          | C:               | Program Files     | Common Files      |
+|          +----------------------------------------------------------+
+|          |<|                                                      |>|
++----------+----------------------------------------------------------+
