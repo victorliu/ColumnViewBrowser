@@ -32,6 +32,7 @@ protected:
 	CColumnHeader m_header;
 
 	// This is owned by instances of this class
+	CComPtr<IShellFolder> spParentFolder;
 	LPITEMIDLIST m_pidl; // fully qualified!
 
 	int m_nSizeBoxWidth, m_nSizeBoxHeight;
@@ -47,6 +48,8 @@ protected:
 	IDataObject *pIDataObjectDrop; //
 
 	CShellMgr m_ShellMgr;
+
+	TCHAR m_szListViewBuffer[MAX_PATH]; // Buffer for OnLVGetDispInfo
 public:
 	CColumnPane();
 	~CColumnPane();
@@ -61,11 +64,14 @@ public:
 
 	typedef struct tagNMLISTVIEWSELECTPIDL{
 		NMHDR hdr;
+		CComPtr<IShellFolder> parent_folder;
 		LPITEMIDLIST selected_pidl; // follows move semantics
 	} NMLISTVIEWSELECTPIDL, *LPNMLISTVIEWSELECTPIDL;
 
 	typedef struct tagCreateParams{
-		LPITEMIDLIST new_pidl;
+		CComPtr<IShellFolder> parent_folder; // this pointer will be released when a ColumnPane gets destroyed
+		LPITEMIDLIST rel_pidl; // this will be copied out of here, so whoever fills this in can safely keep that copy
+		bool is_folder;
 	} CreateParams, *LPCreateParams;
 
 	static int CALLBACK ListViewCompareProc(LPARAM lparam1, LPARAM lparam2, LPARAM lparamSort);

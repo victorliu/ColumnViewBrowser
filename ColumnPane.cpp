@@ -6,18 +6,13 @@
 
 LRESULT CColumnPane::FillLV(){
 	// Populate list
-	LPSHELLFOLDER pIDesktop;
-	if(S_OK != SHGetDesktopFolder(&pIDesktop)){
-		return FALSE;
-	}
 	LPSHELLFOLDER pShellFolder;
-	if(S_OK != pIDesktop->BindToObject(m_pidl, NULL, IID_IShellFolder, (void**)&pShellFolder)){
-		pIDesktop->Release();
+	if(S_OK != spParentFolder->BindToObject(m_pidl, NULL, IID_IShellFolder, (void**)&pShellFolder)){
 		return FALSE;
 	}
 
 	CComPtr<IEnumIDList> spEnumIDList;
-	HRESULT hr = pShellFolder->EnumObjects(m_list.GetParent(), SHCONTF_FOLDERS | SHCONTF_NONFOLDERS, &spEnumIDList);
+	HRESULT hr = pShellFolder->EnumObjects(m_list.GetParent(), SHCONTF_FOLDERS | SHCONTF_NONFOLDERS | SHCONTF_INCLUDEHIDDEN, &spEnumIDList);
 	if (FAILED(hr))
 		return FALSE;
 
@@ -45,8 +40,6 @@ LRESULT CColumnPane::FillLV(){
 
 		lplvid->ulAttribs = ulAttrs;
 
-		lpifqThisItem = CPidlMgr::Concatenate(m_pidl, lpi);
-
 		lvi.iItem = iCtr;
 		lvi.iSubItem = 0;
 		lvi.pszText = LPSTR_TEXTCALLBACK;
@@ -54,8 +47,7 @@ LRESULT CColumnPane::FillLV(){
 		uFlags = SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON;
 		lvi.iImage = I_IMAGECALLBACK;
 
-		lplvid->spParentFolder.p = pShellFolder;
-		pShellFolder->AddRef();
+		lplvid->spParentFolder.p = pShellFolder; pShellFolder->AddRef();
 
 		// Now make a copy of the ITEMIDLIST
 		lplvid->lpi= CPidlMgr::Copy(lpi);
@@ -70,8 +62,7 @@ LRESULT CColumnPane::FillLV(){
 		m_list.AddItem(n, 4, LPSTR_TEXTCALLBACK, I_IMAGECALLBACK);
 
 		iCtr++;
-		lpifqThisItem = NULL;
-		lpi = NULL;   // free PIDL the shell gave you
+		CPidlMgr::Delete(lpi); // free PIDL the shell gave you
 	}
 
 	//SortData sd(m_nSort, m_bReverseSort);
@@ -130,8 +121,10 @@ void CColumnPane::OnDestroy(){
 int CColumnPane::OnCreate(LPCREATESTRUCT lpCreateStruct){
 	LPCreateParams pcp = (LPCreateParams)lpCreateStruct->lpCreateParams;
 	if(NULL != pcp){
-		m_pidl = CPidlMgr::Copy(pcp->new_pidl);
+		spParentFolder = pcp->parent_folder;
+		m_pidl = CPidlMgr::Copy(pcp->rel_pidl);
 	}else{
+		spParentFolder = NULL;
 		m_pidl = NULL;
 	}
 
@@ -151,6 +144,16 @@ int CColumnPane::OnCreate(LPCREATESTRUCT lpCreateStruct){
 
 	InitLV();
 	FillLV();
+
+	// Fill in the header text
+	{
+		STRRET strDispName;
+		spParentFolder->GetDisplayNameOf(m_pidl, SHGDN_NORMAL, &strDispName);
+		LPTSTR szDisplayName;
+		HRESULT hr = StrRetToStr(&strDispName, m_pidl, &szDisplayName);
+		m_header.SetWindowText(szDisplayName);
+		CoTaskMemFree(szDisplayName);
+	}
 
 	return 0;
 }
@@ -338,6 +341,7 @@ LRESULT CColumnPane::OnLVItemClick(int, LPNMHDR pnmh, BOOL&){
 		if(!(lplvid->ulAttribs & SFGAO_FOLDER)){ // clicked on non-folder
 		}else{ // clicked on folder
 			NMLISTVIEWSELECTPIDL nmhdr;
+			nmhdr.parent_folder = lplvid->spParentFolder;
 			nmhdr.selected_pidl = lplvid->lpi;
 			nmhdr.hdr.code = m_nListViewSelectPIDLNotification;
 			nmhdr.hdr.idFrom = GetDlgCtrlID();
@@ -366,46 +370,39 @@ LRESULT CColumnPane::OnLVGetDispInfo(int, LPNMHDR pnmh, BOOL&){
 		return 0L;
 	LPLVITEMDATA lplvid = (LPLVITEMDATA)plvdi->item.lParam;
 	
-	CShellItemIDList pidlTemp = m_ShellMgr.ConcatPidls(m_pidl, lplvid->lpi);
+	CShellItemIDList pidlTemp = CPidlMgr::Copy(lplvid->lpi);
 	plvdi->item.iImage = m_ShellMgr.GetIconIndex(pidlTemp, SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
-	if (plvdi->item.iSubItem == 0 && (plvdi->item.mask & LVIF_TEXT) )   // File Name
-	{
+	if (plvdi->item.iSubItem == 0 && (plvdi->item.mask & LVIF_TEXT) ){   // File Name
 		m_ShellMgr.GetName(lplvid->spParentFolder, lplvid->lpi, SHGDN_NORMAL, plvdi->item.pszText);
-	}	
-	else
-	{
-		/*
+	}else{
 		CComPtr<IShellFolder2> spFolder2;
-		HRESULT hr = lptvid->spParentFolder->QueryInterface(IID_IShellFolder2, (void**)&spFolder2);
-		if(FAILED(hr))
-			return hr;
+		HRESULT hr = spParentFolder->QueryInterface(IID_IShellFolder2, (void**)&spFolder2);
+		if(FAILED(hr)){ return hr; }
 
 		SHELLDETAILS sd = { 0 };
 		sd.fmt = LVCFMT_CENTER;
 		sd.cxChar = 15;
 		
+		// The subitem number determines which column we are interested in
 		hr = spFolder2->GetDetailsOf(lplvid->lpi, plvdi->item.iSubItem, &sd);
-		if(FAILED(hr))
-			return hr;
+		if(FAILED(hr)){ return hr; }
 
-		if(sd.str.uType == STRRET_WSTR)
-		{
+		if(sd.str.uType == STRRET_WSTR){
 			StrRetToBuf(&sd.str, lplvid->lpi.m_pidl, m_szListViewBuffer, MAX_PATH);
-			plvdi->item.pszText=m_szListViewBuffer;
-		}
-		else if(sd.str.uType == STRRET_OFFSET)
-		{
-			plvdi->item.pszText = (LPTSTR)lptvid->lpi + sd.str.uOffset;
-		}
-		else if(sd.str.uType == STRRET_CSTR)
-		{
+			plvdi->item.pszText = m_szListViewBuffer;
+		}else if(sd.str.uType == STRRET_OFFSET){
+			LPCITEMIDLIST parent_pidl;
+			hr = SHBindToParent(m_pidl, IID_IShellFolder, (void**)&spParentFolder, &parent_pidl);
+			plvdi->item.pszText = (LPTSTR)parent_pidl + sd.str.uOffset;
+		}else if(sd.str.uType == STRRET_CSTR){
 			USES_CONVERSION;
 			plvdi->item.pszText = A2T(sd.str.cStr);
-		}*/
+		}
 	}
 	
 	plvdi->item.mask |= LVIF_DI_SETITEM;
 
+	CPidlMgr::Delete(pidlTemp);
 	return 0L;
 }
 

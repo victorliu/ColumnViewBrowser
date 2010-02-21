@@ -18,9 +18,6 @@ BOOL CRowContainer::PreTranslateMessage(MSG* pMsg){
 
 int CRowContainer::OnCreate(LPCREATESTRUCT lpCreateStruct){
 	CRowContainer::LPCreateParams pcp = (CRowContainer::LPCreateParams)lpCreateStruct->lpCreateParams;
-	if(NULL != pcp){
-		m_root = pcp->root_pidl;
-	}
 
 	m_nFirstPaneOffset = 0;
 	RecomputeTotalPanesWidth();
@@ -211,7 +208,7 @@ void CRowContainer::RemovePanesAfter(HWND hPane){
 		m_panes.erase(current);
 	}
 }
-void CRowContainer::AppendPane(LPITEMIDLIST pidl){
+void CRowContainer::AppendPane(CComPtr<IShellFolder> parent, LPITEMIDLIST pidl){
 	RECT rc, crc;
 	GetClientRect(&crc);
 	CopyRect(&rc, &crc);
@@ -232,13 +229,19 @@ void CRowContainer::AppendPane(LPITEMIDLIST pidl){
 
 	m_panes.push_back(CColumnPane());
 	CColumnPane::CreateParams cp;
-	cp.new_pidl = pidl;
+	cp.parent_folder = parent;
+	cp.rel_pidl = pidl;
+	cp.is_folder = true;
 	m_panes.back().Create(*this, &rc, NULL, 0, 0, (HMENU)(m_nPaneBaseID+m_panes.size()), &cp);
 }
 void CRowContainer::NewRootPane(LPITEMIDLIST pidl){
 	RemoveAllPanes();
-	m_root = pidl;
-	AppendPane(pidl);
+	{
+		LPSHELLFOLDER pIDesktop;
+		if(S_OK == SHGetDesktopFolder(&pIDesktop)){
+			AppendPane(CComPtr<IShellFolder>(pIDesktop), pidl);
+		}
+	}
 	UpdateScrollBar(TRUE);
 }
 
@@ -246,7 +249,7 @@ LRESULT CRowContainer::OnPaneItemSelected(int id, LPNMHDR lParam, BOOL &bHandled
 	CColumnPane::LPNMLISTVIEWSELECTPIDL plvsp = (CColumnPane::LPNMLISTVIEWSELECTPIDL)lParam;
 	HWND hFrom = plvsp->hdr.hwndFrom;
 	RemovePanesAfter(hFrom);
-	AppendPane(plvsp->selected_pidl);
+	AppendPane(plvsp->parent_folder, plvsp->selected_pidl);
 
 	UpdateScrollBar(TRUE);
 	return 0;
