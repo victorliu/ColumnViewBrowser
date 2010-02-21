@@ -16,8 +16,7 @@ LRESULT CColumnPane::FillLV(){
 	if (FAILED(hr))
 		return FALSE;
 
-	CShellItemIDList lpifqThisItem;
-	CShellItemIDList lpi;
+	LPITEMIDLIST lpi;
 	ULONG ulFetched = 0;
 	UINT uFlags = 0;
 	LVITEM lvi = { 0 };
@@ -72,18 +71,18 @@ LRESULT CColumnPane::FillLV(){
 }
 void CColumnPane::InitLV(){
 	// Get Desktop folder
-	CShellItemIDList spidl;
+	LPITEMIDLIST spidl;
 	HRESULT hRet = ::SHGetSpecialFolderLocation(m_hWnd, CSIDL_DESKTOP, &spidl);
 	hRet;	// avoid level 4 warning
 	ATLASSERT(SUCCEEDED(hRet));
 
 	// Get system image lists
 	SHFILEINFO sfi = { 0 };
-	HIMAGELIST hImageList = (HIMAGELIST)::SHGetFileInfo(spidl, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_ICON);
+	HIMAGELIST hImageList = (HIMAGELIST)::SHGetFileInfo((LPCWSTR)spidl, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_ICON);
 	ATLASSERT(hImageList != NULL);
 
 	memset(&sfi, 0, sizeof(SHFILEINFO));
-	HIMAGELIST hImageListSmall = (HIMAGELIST)::SHGetFileInfo(spidl, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
+	HIMAGELIST hImageListSmall = (HIMAGELIST)::SHGetFileInfo((LPCWSTR)spidl, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
 	ATLASSERT(hImageListSmall != NULL);
 
 	// Create list view columns
@@ -370,10 +369,33 @@ LRESULT CColumnPane::OnLVGetDispInfo(int, LPNMHDR pnmh, BOOL&){
 		return 0L;
 	LPLVITEMDATA lplvid = (LPLVITEMDATA)plvdi->item.lParam;
 	
-	CShellItemIDList pidlTemp = CPidlMgr::Copy(lplvid->lpi);
-	plvdi->item.iImage = m_ShellMgr.GetIconIndex(pidlTemp, SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
+	LPITEMIDLIST pidlTemp = CPidlMgr::Copy(lplvid->lpi);
+
+	{
+		SHFILEINFO sfi = { 0 };
+		DWORD_PTR dwRet = ::SHGetFileInfo((LPCTSTR)pidlTemp, 0, &sfi, sizeof(SHFILEINFO), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
+		plvdi->item.iImage = (dwRet != 0) ? sfi.iIcon : -1;
+	}
 	if (plvdi->item.iSubItem == 0 && (plvdi->item.mask & LVIF_TEXT) ){   // File Name
-		m_ShellMgr.GetName(lplvid->spParentFolder, lplvid->lpi, SHGDN_NORMAL, plvdi->item.pszText);
+		STRRET str = { STRRET_CSTR };
+		if (lplvid->spParentFolder->GetDisplayNameOf(lplvid->lpi, SHGDN_NORMAL, &str) == NOERROR){
+			USES_CONVERSION;
+
+			switch (str.uType){
+			case STRRET_WSTR:
+				lstrcpy(plvdi->item.pszText, W2CT(str.pOleStr));
+				::CoTaskMemFree(str.pOleStr);
+				break;
+			case STRRET_OFFSET:
+				lstrcpy(plvdi->item.pszText, (LPTSTR)lplvid->lpi + str.uOffset);
+				break;
+			case STRRET_CSTR:
+				lstrcpy(plvdi->item.pszText, A2CT(str.cStr));
+				break;
+			default:
+				break;
+			}
+		}
 	}else{
 		CComPtr<IShellFolder2> spFolder2;
 		HRESULT hr = spParentFolder->QueryInterface(IID_IShellFolder2, (void**)&spFolder2);
@@ -388,7 +410,7 @@ LRESULT CColumnPane::OnLVGetDispInfo(int, LPNMHDR pnmh, BOOL&){
 		if(FAILED(hr)){ return hr; }
 
 		if(sd.str.uType == STRRET_WSTR){
-			StrRetToBuf(&sd.str, lplvid->lpi.m_pidl, m_szListViewBuffer, MAX_PATH);
+			StrRetToBuf(&sd.str, m_pidl, m_szListViewBuffer, MAX_PATH);
 			plvdi->item.pszText = m_szListViewBuffer;
 		}else if(sd.str.uType == STRRET_OFFSET){
 			LPCITEMIDLIST parent_pidl;

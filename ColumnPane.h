@@ -2,7 +2,6 @@
 
 #include "ColumnList.h"
 #include "ColumnHeader.h"
-#include "ShellMgr.h"
 
 // int OnPaneResize(HWND hPane)
 #define MSG_WM_USER_PANE_RESIZE(func) \
@@ -47,9 +46,19 @@ protected:
 	IDropTarget *pIDropTarget;     // these two are for drag and drop
 	IDataObject *pIDataObjectDrop; //
 
-	CShellMgr m_ShellMgr;
-
 	TCHAR m_szListViewBuffer[MAX_PATH]; // Buffer for OnLVGetDispInfo
+
+	
+	typedef struct _LVItemData
+	{
+		_LVItemData() : ulAttribs(0)
+		{ }
+		
+		CComPtr<IShellFolder> spParentFolder;
+		LPITEMIDLIST lpi;
+		ULONG ulAttribs;
+
+	} LVITEMDATA, *LPLVITEMDATA;
 public:
 	CColumnPane();
 	~CColumnPane();
