@@ -65,7 +65,7 @@ public:
 	// On item deselection, drop all panes after the pane in which the item was deselected
 	// On item selection, make sure all panes after the pane in which the selection are removed, and add the new one
 	void RemovePanesAfter(HWND hPane);
-	void AppendPane(LPITEMIDLIST pidl); // pidl follows move semantics
+	void AppendPane(LPITEMIDLIST pidl); // pidl follows move semantics, should be a full path PIDL
 	void NewRootPane(LPITEMIDLIST pidl); // pidl follows move semantics
 
 	LRESULT OnPaneItemSelected(int id, LPNMHDR lParam, BOOL &bHandled);

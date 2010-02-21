@@ -1,5 +1,6 @@
 #include "StdAfx.h"
 #include "RowContainer.h"
+#include "CPidlMgr.h"
 /*
 BOOL CRowContainer::PreTranslateMessage(MSG* pMsg){
 	if(WM_MOUSEWHEEL == pMsg->message){
@@ -244,7 +245,7 @@ void CRowContainer::NewRootPane(LPITEMIDLIST pidl){
 LRESULT CRowContainer::OnPaneItemSelected(int id, LPNMHDR lParam, BOOL &bHandled){
 	CColumnPane::LPNMLISTVIEWSELECTPIDL plvsp = (CColumnPane::LPNMLISTVIEWSELECTPIDL)lParam;
 	HWND hFrom = plvsp->hdr.hwndFrom;
-	RemovePanesAfter(hFrom); // shouldn't be necessary
+	RemovePanesAfter(hFrom);
 	AppendPane(plvsp->selected_pidl);
 
 	UpdateScrollBar(TRUE);

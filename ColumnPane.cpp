@@ -45,7 +45,7 @@ LRESULT CColumnPane::FillLV(){
 
 		lplvid->ulAttribs = ulAttrs;
 
-		lpifqThisItem = m_ShellMgr.ConcatPidls(m_pidl, lpi);
+		lpifqThisItem = CPidlMgr::Concatenate(m_pidl, lpi);
 
 		lvi.iItem = iCtr;
 		lvi.iSubItem = 0;
@@ -58,7 +58,7 @@ LRESULT CColumnPane::FillLV(){
 		pShellFolder->AddRef();
 
 		// Now make a copy of the ITEMIDLIST
-		lplvid->lpi= m_ShellMgr.CopyITEMID(lpi);
+		lplvid->lpi= CPidlMgr::Copy(lpi);
 
 		lvi.lParam = (LPARAM)lplvid;
 
@@ -108,22 +108,6 @@ void CColumnPane::InitLV(){
 }
 
 
-int CALLBACK CColumnPane::ListViewCompareProc(LPARAM lparam1, LPARAM lparam2, LPARAM lParamSort)
-{
-	ATLASSERT(lParamSort != NULL);
-
-	LPLVITEMDATA lplvid1 = (LPLVITEMDATA)lparam1;
-	LPLVITEMDATA lplvid2 = (LPLVITEMDATA)lparam2;
-	SortData* pSD = (SortData*)lParamSort;
-
-	HRESULT hr = 0;
-	if(pSD->bReverseSort)
-		hr = lplvid1->spParentFolder->CompareIDs(0, lplvid2->lpi, lplvid1->lpi);
-	else
-		hr = lplvid1->spParentFolder->CompareIDs(0, lplvid1->lpi, lplvid2->lpi);
-
-	return (int)(short)HRESULT_CODE(hr);
-}
 
 CColumnPane::CColumnPane():g_IContext2(NULL),g_IContext3(NULL){}
 CColumnPane::~CColumnPane(){
@@ -146,11 +130,10 @@ void CColumnPane::OnDestroy(){
 int CColumnPane::OnCreate(LPCREATESTRUCT lpCreateStruct){
 	LPCreateParams pcp = (LPCreateParams)lpCreateStruct->lpCreateParams;
 	if(NULL != pcp){
-		m_pidl = pcp->new_pidl;
+		m_pidl = CPidlMgr::Copy(pcp->new_pidl);
 	}else{
 		m_pidl = NULL;
 	}
-
 
 	m_nSizeBoxWidth = GetSystemMetrics(SM_CXVSCROLL);
 	m_nSizeBoxHeight = GetSystemMetrics(SM_CYHSCROLL);
@@ -161,7 +144,7 @@ int CColumnPane::OnCreate(LPCREATESTRUCT lpCreateStruct){
 
 	DWORD dwStyle = WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE
 	              | LVS_REPORT | LVS_SHOWSELALWAYS | LVS_SHAREIMAGELISTS
-				  | LVS_AUTOARRANGE | LVS_EDITLABELS | WS_EX_CLIENTEDGE; // | LVS_OWNERDATA
+				  | LVS_AUTOARRANGE | LVS_EDITLABELS | WS_EX_CLIENTEDGE;
 	DWORD dwExStyle = 0;
 	m_list.Create(m_hWnd, rcDefault, NULL, dwStyle, dwExStyle, (HMENU)m_nListID, NULL);
 	m_list.SetExtendedListViewStyle(LVS_EX_HEADERDRAGDROP | LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_FULLROWSELECT | LVS_EX_INFOTIP | LVS_EX_UNDERLINEHOT | LVS_EX_LABELTIP | LVS_EX_DOUBLEBUFFER);
@@ -249,6 +232,21 @@ void CColumnPane::SetDirectory(LPITEMIDLIST pidl){
 	m_pidl = pidl;
 }
 
+int CALLBACK CColumnPane::ListViewCompareProc(LPARAM lparam1, LPARAM lparam2, LPARAM lParamSort){
+	ATLASSERT(lParamSort != NULL);
+
+	LPLVITEMDATA lplvid1 = (LPLVITEMDATA)lparam1;
+	LPLVITEMDATA lplvid2 = (LPLVITEMDATA)lparam2;
+	SortData* pSD = (SortData*)lParamSort;
+
+	HRESULT hr = 0;
+	if(pSD->bReverseSort)
+		hr = lplvid1->spParentFolder->CompareIDs(0, lplvid2->lpi, lplvid1->lpi);
+	else
+		hr = lplvid1->spParentFolder->CompareIDs(0, lplvid1->lpi, lplvid2->lpi);
+
+	return (int)(short)HRESULT_CODE(hr);
+}
 
 UINT CColumnPane::GetResizeMessage(){
 	static UINT uResizeMessage = 0;
