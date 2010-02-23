@@ -15,6 +15,8 @@ protected:
 	int m_nFirstPaneOffset;
 	static const int m_nPaneDefaultWidth = 200;
 	static const int m_nScrollPixels = 10;
+
+	HWND m_hwndActivePane;
 public:
 
 	enum{
@@ -74,8 +76,8 @@ public:
 
 	int GetActivePaneIndex();
 	void SetActivePaneIndex(int index);
-	CColumnPane& GetActivePane();
-	CColumnPane& GetPane(int index);
+	CColumnPane* GetActivePane();
+	CColumnPane* GetPane(int index);
 private:
 	void RemoveAllPanes();
 };

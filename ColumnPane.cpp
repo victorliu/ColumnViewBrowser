@@ -170,6 +170,10 @@ void CColumnPane::OnSize(UINT nType, CSize size){
 	}
 	SetMsgHandled(FALSE);
 }
+HWND CColumnPane::GetMainWindowHWND(){
+	// Parent of this is RowContainer, whose parent is the splitter, whose parent is the main form.
+	return ::GetParent(::GetParent(::GetParent(*this)));
+}
 void CColumnPane::UpdateLayout(BOOL UpdateBars){
 	RECT rect = { 0 };
 	GetClientRect(&rect);
@@ -315,6 +319,11 @@ LRESULT CColumnPane::OnDblClick(LPNMHDR pnmh){
 LRESULT CColumnPane::OnSetFocus(LPNMHDR pnmh){
 	m_header.SetActiveState(TRUE);
 	m_header.Invalidate();
+	NMHDR nmhdr;
+	nmhdr.code = m_nListViewFocusNotification;
+	nmhdr.hwndFrom = *this;
+	nmhdr.idFrom = m_nListID;
+	GetParent().SendMessage(WM_NOTIFY, (WPARAM)m_nListID, (LPARAM)&nmhdr);
 	return 0;
 }
 LRESULT CColumnPane::OnKillFocus(LPNMHDR pnmh){
@@ -342,10 +351,7 @@ LRESULT CColumnPane::OnNMRClick(int, LPNMHDR pnmh, BOOL&)
 			if (m_list.GetItem(&lvi) != FALSE){
 				LPLVITEMDATA lptvid = (LPLVITEMDATA)lvi.lParam;
 				if (lptvid != NULL){
-					// Parent of this is RowContainer, whose parent is the splitter, whose parent is the main form.
-					HWND hwnd = ::GetParent(::GetParent(::GetParent(*this)));
-					TCHAR buf[MAX_PATH];
-					::GetWindowText(hwnd, buf, MAX_PATH);
+					HWND hwnd = GetMainWindowHWND();
 					OnContextMenu(hwnd, spParentFolder, m_pidl, pt);
 				}
 			}
@@ -536,4 +542,41 @@ LRESULT CColumnPane::OnLVDeleteItem(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandl
 	delete lplvid;
 
 	return 0;
+}
+LRESULT CColumnPane::OnLVEndLabelEdit(int idCtrl, LPNMHDR pnmh, BOOL& bHandled){
+	// Perform a file rename
+	NMLVDISPINFO *pdi = (NMLVDISPINFO*)pnmh; 
+	if(NULL == pdi->item.pszText){
+		return FALSE;
+	}
+	if(0 == StrCmp(pdi->item.pszText, _T(""))){
+		return FALSE;
+	}
+	// Grab the item's lParam (we need the pidl)
+	LVITEM item = {0};
+	item.iItem = pdi->item.iItem;
+	item.mask = LVIF_PARAM;
+	m_list.GetItem(&item);
+	LPLVITEMDATA lplvid = (LPLVITEMDATA)item.lParam;
+	LPITEMIDLIST new_pidl;
+	if(SUCCEEDED(lplvid->spParentFolder->SetNameOf(GetMainWindowHWND(), lplvid->lpi, pdi->item.pszText, SHGDN_NORMAL | SHGDN_FOREDITING, &new_pidl))){
+		return TRUE;
+	}else{
+		return FALSE;
+	}
+}
+
+
+
+
+
+
+
+void CColumnPane::RenameSelectedItem(){
+	UINT nSelected = m_list.GetSelectedCount();
+	if(nSelected < 1){ return; }
+	int iSelected = (int)::SendMessage(m_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_ALL | LVNI_SELECTED, 0));
+	m_list.SetFocus();
+	m_list.EditLabel(iSelected);
+	return;
 }

@@ -187,7 +187,10 @@ LRESULT CMainFrame::OnFileNewFile(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWn
 	return 0;
 }
 LRESULT CMainFrame::OnFileRename(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/){
-	//
+	CColumnPane* active_pane = m_rowMain.GetActivePane();
+	if(NULL != active_pane){
+		active_pane->RenameSelectedItem();
+	}
 	return 0;
 }
 

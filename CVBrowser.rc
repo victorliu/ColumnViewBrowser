@@ -88,8 +88,7 @@ IDR_MAINFRAME MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "Browse\tEnter",               ID_FILE_BROWSE
-        MENUITEM "Browse in &new window\tCtrl+Enter", ID_FILE_BROWSENEW
+        MENUITEM "Browse in &new window\tCtrl+N", ID_FILE_BROWSENEW
         MENUITEM "&Save to shelf\tCtrl+S",      ID_FILE_SAVE
         MENUITEM SEPARATOR
         MENUITEM "New file\tF7",                ID_FILE_NEWFILE

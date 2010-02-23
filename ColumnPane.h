@@ -59,6 +59,7 @@ protected:
 		ULONG ulAttribs;
 
 	} LVITEMDATA, *LPLVITEMDATA;
+	HWND GetMainWindowHWND();
 public:
 	CColumnPane();
 	~CColumnPane();
@@ -109,6 +110,7 @@ public:
 		// We store a heap allocated object in each LV item's lParam, and
 		// we need to go and delete them.
 		NOTIFY_CODE_HANDLER(LVN_DELETEITEM, OnLVDeleteItem)
+		NOTIFY_CODE_HANDLER(LVN_ENDLABELEDIT, OnLVEndLabelEdit)
 		
 		NOTIFY_CODE_HANDLER_EX(LVN_ITEMCHANGED, OnColumnItemChanged)
 		NOTIFY_HANDLER_EX(m_nListID, NM_RCLICK, OnRightClick)
@@ -157,6 +159,7 @@ public:
 	LRESULT OnLVGetDispInfo(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/);
 	LRESULT OnLVItemClick(int , LPNMHDR pnmh, BOOL& );
 	LRESULT OnLVDeleteItem(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/);
+	LRESULT OnLVEndLabelEdit(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/);
 	
 	LRESULT OnColumnItemChanged(LPNMHDR lParam);
 	LRESULT OnNMRClick(int , LPNMHDR pnmh, BOOL& );
@@ -169,4 +172,18 @@ public:
 	void SetDirectory(LPITEMIDLIST pidl);
 	void DestroyPIDL();
 
+
+	// API for allowed operations:
+	void RenameSelectedItem(); // doesn't do the renaming, just simulates a second click on the item
+	void CreateNewFile();
+	void CreateNewDirectory();
+	void DeleteSelectedItems();
+	void CutSelectedItemsToClipBoard();
+	void CopySelectedItemsToClipBoard();
+	void PasteFromClipboard();
+	void EditSelectedItems();
+	void ViewSelectedItems();
+	void SelectAll();
+	void UnselectAll();
+	void GetFullPath(LPTSTR lpPath, DWORD dwPathLen);
 };

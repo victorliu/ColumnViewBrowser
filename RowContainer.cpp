@@ -263,6 +263,7 @@ LRESULT CRowContainer::OnPaneItemDeselected(int id, LPNMHDR lParam, BOOL &bHandl
 	return 0;
 }
 LRESULT CRowContainer::OnPaneFocused(int id, LPNMHDR lParam, BOOL &bHandled){
+	m_hwndActivePane = lParam->hwndFrom;
 	return 0;
 }
 /*
@@ -283,3 +284,41 @@ BOOL CRowContainer::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt){
 	return 0;
 }
 */
+
+int CRowContainer::GetActivePaneIndex(){
+	int j = 0;
+	for(PaneList_t::const_iterator i = m_panes.begin(); i != m_panes.end(); ++i){
+		if(HWND(*i) == m_hwndActivePane){
+			return j;
+		}
+		++j;
+	}
+	return -1;
+}
+void CRowContainer::SetActivePaneIndex(int index){
+	int j = 0;
+	for(PaneList_t::iterator i = m_panes.begin(); i != m_panes.end(); ++i){
+		if(j == index){
+			i->SetFocus();
+			break;
+		}
+	}
+}
+CColumnPane* CRowContainer::GetActivePane(){
+	for(PaneList_t::iterator i = m_panes.begin(); i != m_panes.end(); ++i){
+		if(HWND(*i) == m_hwndActivePane){
+			return &(*i);
+		}
+	}
+	return NULL;
+}
+CColumnPane* CRowContainer::GetPane(int index){
+	int j = 0;
+	for(PaneList_t::iterator i = m_panes.begin(); i != m_panes.end(); ++i){
+		if(j == index){
+			return &(*i);
+		}
+		++j;
+	}
+	return NULL;
+}
