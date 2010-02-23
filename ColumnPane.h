@@ -67,6 +67,7 @@ public:
 	enum{
 		m_nListViewSelectPIDLNotification = 1,
 		m_nListViewDeselectPIDLNotification,
+		m_nListViewFocusNotification,
 		m_nHeaderID = 100,
 		m_nListID
 	};
@@ -98,7 +99,7 @@ public:
 		MSG_WM_NCDESTROY(OnNcDestroy)
 		MSG_WM_PAINT(OnPaint)
 		MSG_WM_ERASEBKGND(OnEraseBkgnd)
-		
+
 		// We use callbacks to get text and icons for the listview
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnLVGetDispInfo)
 		// Mouse capture:
@@ -112,10 +113,11 @@ public:
 		NOTIFY_CODE_HANDLER_EX(LVN_ITEMCHANGED, OnColumnItemChanged)
 		NOTIFY_HANDLER_EX(m_nListID, NM_RCLICK, OnRightClick)
 		NOTIFY_HANDLER_EX(m_nListID, NM_DBLCLK, OnDblClick)
+		NOTIFY_HANDLER_EX(m_nListID, NM_SETFOCUS, OnSetFocus)
+		NOTIFY_HANDLER_EX(m_nListID, NM_KILLFOCUS, OnKillFocus)
 		//MSG_WM_GETMINMAXINFO(OnGetMinMaxInfo)
 		/*
 		MESSAGE_HANDLER(WM_SIZE, OnSize)
-		MESSAGE_HANDLER(WM_SETFOCUS, OnSetFocus)
 		
 		MESSAGE_HANDLER(WM_NOTIFY, OnNotify)
 		MESSAGE_HANDLER(WM_COMMAND, OnCommand)
@@ -142,6 +144,8 @@ public:
 	//void OnWindowPosChanged(LPWINDOWPOS lpWndPos);
 	//void OnWindowPosChanging(LPWINDOWPOS lpWndPos);
 
+	LRESULT OnSetFocus(LPNMHDR pnmh);
+	LRESULT OnKillFocus(LPNMHDR pnmh);
 	void OnPaint(CDCHandle dc);
 	void OnDestroy();
 	void OnNcDestroy();

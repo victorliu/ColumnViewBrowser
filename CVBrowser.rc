@@ -88,8 +88,8 @@ IDR_MAINFRAME MENU
 BEGIN
     POPUP "&File"
     BEGIN
-        MENUITEM "Browse\tEnter",               ID_FILE_NEW
-        MENUITEM "Browse in &new window\tCtrl+Enter", ID_FILE_OPEN
+        MENUITEM "Browse\tEnter",               ID_FILE_BROWSE
+        MENUITEM "Browse in &new window\tCtrl+Enter", ID_FILE_BROWSENEW
         MENUITEM "&Save to shelf\tCtrl+S",      ID_FILE_SAVE
         MENUITEM SEPARATOR
         MENUITEM "New file\tF7",                ID_FILE_NEWFILE
@@ -97,9 +97,9 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "&Rename\tF2",                 ID_FILE_RENAME
         MENUITEM "&Delete\tDel",                ID_FILE_DELETE
-        MENUITEM "&View\tF3",                   ID_FILE_PRINT
-        MENUITEM "&Edit\tF4",                   ID_FILE_PRINT_PREVIEW
-        MENUITEM "&Properties\tF12",            ID_FILE_PRINT_SETUP
+        MENUITEM "&View\tF3",                   ID_FILE_VIEW
+        MENUITEM "&Edit\tF4",                   ID_FILE_EDIT
+        MENUITEM "&Properties\tF12",            ID_FILE_PROPERTIES
         MENUITEM SEPARATOR
         MENUITEM "Export &listing...",          ID_FILE_EXPORTLISTING
         MENUITEM SEPARATOR

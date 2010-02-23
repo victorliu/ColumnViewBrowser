@@ -312,6 +312,17 @@ LRESULT CColumnPane::OnDblClick(LPNMHDR pnmh){
 	return 0;
 }
 
+LRESULT CColumnPane::OnSetFocus(LPNMHDR pnmh){
+	m_header.SetActiveState(TRUE);
+	m_header.Invalidate();
+	return 0;
+}
+LRESULT CColumnPane::OnKillFocus(LPNMHDR pnmh){
+	m_header.SetActiveState(FALSE);
+	m_header.Invalidate();
+	return 0;
+}
+
 LRESULT CColumnPane::OnNMRClick(int, LPNMHDR pnmh, BOOL&)
 {
 	POINT pt = { 0, 0 };

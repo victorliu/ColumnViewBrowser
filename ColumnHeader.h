@@ -7,6 +7,7 @@ class CColumnHeader : public CWindowImpl<CColumnHeader>
 protected:
 	int m_nDesiredHeight;
 	static const int m_nPadding = 1;
+	BOOL m_bActive;
 public:
 	DECLARE_WND_CLASS_EX(_T("ColumnPaneHeader"), 0, -1)
 
@@ -36,4 +37,6 @@ public:
 	int OnSetText(LPCTSTR lpstrText);
 
 	int GetDesiredHeight() const{ return m_nDesiredHeight; }
+
+	void SetActiveState(BOOL bActive);
 };

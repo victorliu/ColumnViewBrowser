@@ -2,6 +2,8 @@
 #include "ColumnHeader.h"
 
 LRESULT CColumnHeader::OnCreate(LPCREATESTRUCT cs){
+	m_bActive = FALSE;
+
 	LPCREATEPARAMS cp = (LPCREATEPARAMS)cs->lpCreateParams;
 	m_nDesiredHeight = cp->nMinHeight;
 	
@@ -42,7 +44,11 @@ void CColumnHeader::DrawHeader(CDCHandle dc){
 	GetClientRect(&rc);
 
 	dc.DrawEdge(&rc, EDGE_ETCHED, BF_LEFT | BF_TOP | BF_ADJUST | BF_FLAT);
-	dc.FillRect(&rc, COLOR_3DFACE);
+	if(m_bActive){
+		dc.FillRect(&rc, COLOR_HIGHLIGHT);
+	}else{
+		dc.FillRect(&rc, COLOR_3DFACE);
+	}
 
 	int len = 0;
 	if(len = GetWindowTextLength()){
@@ -57,8 +63,11 @@ void CColumnHeader::DrawHeader(CDCHandle dc){
 		const HFONT sysfont = CreateFontIndirect(&(ncm.lfStatusFont));
 		HFONT prevfont = dc.SelectFont(sysfont);
 
-
-		dc.SetTextColor(::GetSysColor(COLOR_WINDOWTEXT));
+		if(m_bActive){
+			dc.SetTextColor(::GetSysColor(COLOR_HIGHLIGHTTEXT));
+		}else{
+			dc.SetTextColor(::GetSysColor(COLOR_WINDOWTEXT));
+		}
 		dc.SetBkMode(TRANSPARENT);
 		rc.left += m_nPadding;
 		rc.right -= m_nPadding+rc.bottom;
@@ -71,3 +80,6 @@ void CColumnHeader::DrawHeader(CDCHandle dc){
 	}
 }
 
+void CColumnHeader::SetActiveState(BOOL bActive){
+	m_bActive = bActive;
+}

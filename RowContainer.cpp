@@ -261,7 +261,11 @@ LRESULT CRowContainer::OnPaneItemDeselected(int id, LPNMHDR lParam, BOOL &bHandl
 	
 	UpdateScrollBar(TRUE);
 	return 0;
-}/*
+}
+LRESULT CRowContainer::OnPaneFocused(int id, LPNMHDR lParam, BOOL &bHandled){
+	return 0;
+}
+/*
 BOOL CRowContainer::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt){
 	UINT uScroll = 0;
 	if(!SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &uScroll, 0)) {

@@ -182,10 +182,12 @@ LRESULT CMainFrame::OnFileExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCt
 	return 0;
 }
 
-LRESULT CMainFrame::OnFileNew(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
+LRESULT CMainFrame::OnFileNewFile(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/){
 	// TODO: add code to initialize document
-
+	return 0;
+}
+LRESULT CMainFrame::OnFileRename(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/){
+	//
 	return 0;
 }
 
@@ -299,24 +301,31 @@ void OnContextMenu(HWND hwnd, LPSHELLFOLDER lpsfParent, LPITEMIDLIST lpi, POINT 
 				}
 
 				if (iCmd > 0) {
-					CMINVOKECOMMANDINFOEX info = { 0 };
-					info.cbSize = sizeof(info);
-					info.fMask = CMIC_MASK_UNICODE | CMIC_MASK_PTINVOKE;
-					if (GetKeyState(VK_CONTROL) < 0) {
-						info.fMask |= CMIC_MASK_CONTROL_DOWN;
+					CHAR szVerb[10];
+					if(SUCCEEDED(pcm->GetCommandString(iCmd, GCS_VERBA, NULL, szVerb, sizeof(szVerb)/sizeof(szVerb[0])))
+						&& 0 == ::StrCmpA("rename", szVerb))
+					{
+
+					}else{
+						CMINVOKECOMMANDINFOEX info = { 0 };
+						info.cbSize = sizeof(info);
+						info.fMask = CMIC_MASK_UNICODE | CMIC_MASK_PTINVOKE;
+						if (GetKeyState(VK_CONTROL) < 0) {
+							info.fMask |= CMIC_MASK_CONTROL_DOWN;
+						}
+						if (GetKeyState(VK_SHIFT) < 0) {
+							info.fMask |= CMIC_MASK_SHIFT_DOWN;
+						}
+						info.hwnd = hwnd;
+						info.lpVerb  = MAKEINTRESOURCEA(iCmd - SCRATCH_QCM_FIRST);
+						info.lpVerbW = MAKEINTRESOURCEW(iCmd - SCRATCH_QCM_FIRST);
+						info.nShow = SW_SHOWNORMAL;
+						info.ptInvoke = pt;
+						pcm->InvokeCommand((LPCMINVOKECOMMANDINFO)&info);
 					}
-					if (GetKeyState(VK_SHIFT) < 0) {
-						info.fMask |= CMIC_MASK_SHIFT_DOWN;
-					}
-					info.hwnd = hwnd;
-					info.lpVerb  = MAKEINTRESOURCEA(iCmd - SCRATCH_QCM_FIRST);
-					info.lpVerbW = MAKEINTRESOURCEW(iCmd - SCRATCH_QCM_FIRST);
-					info.nShow = SW_SHOWNORMAL;
-					info.ptInvoke = pt;
-					pcm->InvokeCommand((LPCMINVOKECOMMANDINFO)&info);
 				}
-				char buf[MAX_PATH];
-				pcm->GetCommandString(iCmd - SCRATCH_QCM_FIRST, GCS_VERBA, NULL, buf, MAX_PATH);
+				//char buf[MAX_PATH];
+				//pcm->GetCommandString(iCmd - SCRATCH_QCM_FIRST, GCS_VERBA, NULL, buf, MAX_PATH);
 			}
 			DestroyMenu(hmenu);
 		}

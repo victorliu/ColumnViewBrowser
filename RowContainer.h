@@ -32,6 +32,7 @@ public:
 		MSG_WM_DESTROY(OnDestroy)
 		MSG_WM_SIZE(OnSize)
 		MSG_WM_CREATE(OnCreate)
+		NOTIFY_CODE_HANDLER(CColumnPane::m_nListViewFocusNotification, OnPaneFocused)
 		NOTIFY_CODE_HANDLER(CColumnPane::m_nListViewSelectPIDLNotification, OnPaneItemSelected)
 		NOTIFY_CODE_HANDLER(CColumnPane::m_nListViewDeselectPIDLNotification, OnPaneItemDeselected)
 	END_MSG_MAP()
@@ -67,8 +68,14 @@ public:
 	void AppendPane(CComPtr<IShellFolder> parent, LPITEMIDLIST pidl); // pidl follows move semantics, should be a full path PIDL
 	void NewRootPane(LPITEMIDLIST pidl); // pidl follows move semantics
 
+	LRESULT OnPaneFocused(int id, LPNMHDR lParam, BOOL &bHandled);
 	LRESULT OnPaneItemSelected(int id, LPNMHDR lParam, BOOL &bHandled);
 	LRESULT OnPaneItemDeselected(int id, LPNMHDR lParam, BOOL &bHandled);
+
+	int GetActivePaneIndex();
+	void SetActivePaneIndex(int index);
+	CColumnPane& GetActivePane();
+	CColumnPane& GetPane(int index);
 private:
 	void RemoveAllPanes();
 };
