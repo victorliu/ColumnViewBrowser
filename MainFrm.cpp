@@ -24,7 +24,6 @@ BOOL CMainFrame::OnIdle()
 	UIUpdateToolBar();
 	return FALSE;
 }
-
 LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
 	// create command bar window
@@ -103,9 +102,46 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 
 	m_lstRoots.Init();
 
+	// Set up the status bar
+	{
+		m_status.SubclassWindow(m_hWndStatusBar);
+		int arrPanes[] = {
+			ID_DEFAULT_PANE,
+			IDR_STATUS_PANE_ATTRIBUTES,
+			IDR_STATUS_PANE_NUM_ITEMS,
+			IDR_STATUS_PANE_DISK_FREE
+		};
+		int nPanes = sizeof(arrPanes) / sizeof(int);
+		m_status.SetPanes(arrPanes, nPanes, false);
+		int arrWidths[] = { 0, 250, 100, 100 };
+		SetPaneWidths(arrWidths, sizeof(arrWidths) / sizeof(int));
+
+		//Load the text
+		CString str;
+		m_status.SetPaneText(ID_DEFAULT_PANE, _T("Ready")); //, SBT_NOBORDERS);
+	}
+
 	return 0;
 }
 
+void CMainFrame::SetPaneWidths(int* arrWidths, int nPanes){
+    // find the size of the borders
+
+    int arrBorders[3];
+    m_status.GetBorders(arrBorders);
+
+    // calculate right edge of default pane (0)
+    arrWidths[0] += arrBorders[2];
+    for (int i = 1; i < nPanes; i++)
+        arrWidths[0] += arrWidths[i];
+
+    // calculate right edge of remaining panes (1 thru nPanes-1)
+    for (int j = 1; j < nPanes; j++)
+        arrWidths[j] += arrBorders[2] + arrWidths[j - 1];
+
+    // set the pane widths
+    m_status.SetParts(m_status.m_nPanes, arrWidths); 
+}
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
 	DeleteObject(m_fontAddress);
@@ -133,7 +169,7 @@ LRESULT CMainFrame::OnSelChange(WORD /*wNotifyCode*/, WORD wID, HWND hWndCtl, BO
 	WTL::CString strItemText;
 	combo.GetLBText(nSel, strItemText);
 	// Get the item data
-	DWORD dwItemData = combo.GetItemData(nSel);
+	DWORD_PTR dwItemData = combo.GetItemData(nSel);
 	// Call special function to handle the selection change
 	//OnToolBarCombo(combo, wID, nSel, strItemText, dwItemData);
 	// Set focus to the main window
@@ -192,4 +228,98 @@ LRESULT CMainFrame::OnRootsItemChanged(int /*id*/, LPNMHDR lParam, BOOL &bHandle
 		m_rowMain.NewRootPane(m_lstRoots.GetSelectedPIDL(plv->iItem));
 	}
 	return 0;
+}
+
+IContextMenu2 *g_pcm2; // these shouldn't be global, they are per-window instance variables
+IContextMenu3 *g_pcm3;
+IContextMenu *g_pcm;
+#define SCRATCH_QCM_FIRST 1
+#define SCRATCH_QCM_LAST  0x7FFF
+LRESULT CMainFrame::OnDrawItem(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled){
+	if(wParam){ return 0; } // not menu related
+	if(g_pcm2){
+		g_pcm2->HandleMenuMsg(uMsg, wParam, lParam);
+	}
+	return 0;
+}
+LRESULT CMainFrame::OnInitMenuPopup(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled){
+	if(g_pcm2){
+		g_pcm2->HandleMenuMsg(uMsg, wParam, lParam);
+	}
+	return TRUE;
+}
+LRESULT CMainFrame::OnMenuSelect(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled){
+	UINT uItem;
+	TCHAR szBuf[MAX_PATH];
+	// if this is a shell item, get it's descriptive text
+	uItem = (UINT) LOWORD(wParam);   
+	if(g_pcm && 0 == (MF_POPUP & HIWORD(wParam)) && uItem >= SCRATCH_QCM_FIRST && uItem <=  SCRATCH_QCM_LAST){
+		g_pcm->GetCommandString(uItem-SCRATCH_QCM_FIRST, GCS_HELPTEXTW, NULL, (LPSTR)szBuf, sizeof(szBuf)/sizeof(szBuf[0]) );
+
+		// set the status bar text
+		m_status.SetPaneText(ID_DEFAULT_PANE, szBuf);
+	}
+
+	return 0;
+}
+
+// pt is in screen coords
+void OnContextMenu(HWND hwnd, LPSHELLFOLDER lpsfParent, LPITEMIDLIST lpi, POINT pt){
+	IContextMenu *pcm;
+	if (SUCCEEDED(lpsfParent->GetUIObjectOf(hwnd, 1, (const struct _ITEMIDLIST**)&lpi, IID_IContextMenu, 0, (LPVOID*)&pcm))) {
+		HMENU hmenu = CreatePopupMenu();
+		if (hmenu) {
+			HRESULT qcmResult;
+			if(GetKeyState(VK_SHIFT) < 0){
+				qcmResult = pcm->QueryContextMenu(hmenu, 0, SCRATCH_QCM_FIRST, SCRATCH_QCM_LAST, CMF_CANRENAME | CMF_EXTENDEDVERBS );
+			}else{
+				qcmResult = pcm->QueryContextMenu(hmenu, 0, SCRATCH_QCM_FIRST, SCRATCH_QCM_LAST, CMF_CANRENAME | CMF_NORMAL);
+			}
+			if (SUCCEEDED(qcmResult )) {
+				if(SUCCEEDED(pcm->QueryInterface(IID_IContextMenu2, (void**)&g_pcm2))){
+					if(SUCCEEDED(pcm->QueryInterface(IID_IContextMenu3, (void**)&g_pcm3))){
+						// well, good!
+					}else{
+						g_pcm3 = NULL;
+					}
+				}else{
+					g_pcm2 = NULL;
+				}
+				pcm->QueryInterface(IID_IContextMenu3, (void**)&g_pcm3);
+				g_pcm = pcm;
+				int iCmd = TrackPopupMenuEx(hmenu, TPM_RETURNCMD, pt.x, pt.y, hwnd, NULL);
+				g_pcm = NULL;
+				if (g_pcm2) {
+					g_pcm2->Release();
+					g_pcm2 = NULL;
+				}
+				if (g_pcm3) {
+					g_pcm3->Release();
+					g_pcm3 = NULL;
+				}
+
+				if (iCmd > 0) {
+					CMINVOKECOMMANDINFOEX info = { 0 };
+					info.cbSize = sizeof(info);
+					info.fMask = CMIC_MASK_UNICODE | CMIC_MASK_PTINVOKE;
+					if (GetKeyState(VK_CONTROL) < 0) {
+						info.fMask |= CMIC_MASK_CONTROL_DOWN;
+					}
+					if (GetKeyState(VK_SHIFT) < 0) {
+						info.fMask |= CMIC_MASK_SHIFT_DOWN;
+					}
+					info.hwnd = hwnd;
+					info.lpVerb  = MAKEINTRESOURCEA(iCmd - SCRATCH_QCM_FIRST);
+					info.lpVerbW = MAKEINTRESOURCEW(iCmd - SCRATCH_QCM_FIRST);
+					info.nShow = SW_SHOWNORMAL;
+					info.ptInvoke = pt;
+					pcm->InvokeCommand((LPCMINVOKECOMMANDINFO)&info);
+				}
+				char buf[MAX_PATH];
+				pcm->GetCommandString(iCmd - SCRATCH_QCM_FIRST, GCS_VERBA, NULL, buf, MAX_PATH);
+			}
+			DestroyMenu(hmenu);
+		}
+		pcm->Release();
+	}
 }

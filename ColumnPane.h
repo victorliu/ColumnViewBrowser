@@ -101,6 +101,8 @@ public:
 		
 		// We use callbacks to get text and icons for the listview
 		NOTIFY_CODE_HANDLER(LVN_GETDISPINFO, OnLVGetDispInfo)
+		// Mouse capture:
+		NOTIFY_CODE_HANDLER(NM_RCLICK, OnNMRClick)
 		NOTIFY_CODE_HANDLER(NM_CLICK, OnLVItemClick)
 		NOTIFY_CODE_HANDLER(NM_DBLCLK, OnLVItemClick)
 		// We store a heap allocated object in each LV item's lParam, and
@@ -153,8 +155,11 @@ public:
 	LRESULT OnLVDeleteItem(int /*idCtrl*/, LPNMHDR pnmh, BOOL& /*bHandled*/);
 	
 	LRESULT OnColumnItemChanged(LPNMHDR lParam);
+	LRESULT OnNMRClick(int , LPNMHDR pnmh, BOOL& );
 	LRESULT OnRightClick(LPNMHDR pnmh);
 	LRESULT OnDblClick(LPNMHDR pnmh);
+
+	BOOL DoContextMenu(HWND hWnd, LPSHELLFOLDER lpsfParent, LPITEMIDLIST lpi, POINT point);
 	
 
 	void SetDirectory(LPITEMIDLIST pidl);

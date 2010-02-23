@@ -28,6 +28,13 @@ public:
 	BEGIN_MSG_MAP_EX(CMainFrame)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
+
+		// These are for the context menu
+		MESSAGE_HANDLER(WM_DRAWITEM, OnDrawItem)
+		MESSAGE_HANDLER(WM_MEASUREITEM, OnDrawItem)
+		MESSAGE_HANDLER(WM_INITMENUPOPUP, OnInitMenuPopup)
+		MESSAGE_HANDLER(WM_MENUSELECT, OnMenuSelect)
+
 		COMMAND_ID_HANDLER(ID_APP_EXIT, OnFileExit)
 		COMMAND_ID_HANDLER(ID_FILE_NEW, OnFileNew)
 		COMMAND_ID_HANDLER(ID_VIEW_TOOLBAR, OnViewToolBar)
@@ -61,6 +68,10 @@ public:
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled);
+
+	LRESULT OnDrawItem(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled);
+	LRESULT OnInitMenuPopup(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled);
+	LRESULT OnMenuSelect(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled);
 	
 	LRESULT OnSelChange(WORD /*wNotifyCode*/, WORD wID, HWND hWndCtl, BOOL& /*bHandled*/);
 
@@ -76,7 +87,11 @@ protected:
 	CCVRootsList m_lstRoots;
 	CRowContainer m_rowMain;
 	CToolBarCtrl m_tbAddressBar;
+	CMultiPaneStatusBarCtrl m_status;
 
 	CComboBox m_cmbAddress;
 	CFont m_fontAddress;
+
+	void SetPaneWidths(int* arrWidths, int nPanes);
 };
+void OnContextMenu(HWND hwnd, LPSHELLFOLDER lpsfParent, LPITEMIDLIST lpi, POINT pt);

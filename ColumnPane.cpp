@@ -3,6 +3,7 @@
 #include "RowContainer.h"
 #include "CPidlMgr.h"
 #include <shlwapi.h>
+#include "MainFrm.h"
 
 LRESULT CColumnPane::FillLV(){
 	// Populate list
@@ -57,8 +58,8 @@ LRESULT CColumnPane::FillLV(){
 		int n = m_list.InsertItem(&lvi);
 		m_list.AddItem(n, 1, LPSTR_TEXTCALLBACK, I_IMAGECALLBACK);
 		m_list.AddItem(n, 2, LPSTR_TEXTCALLBACK, I_IMAGECALLBACK);
-		m_list.AddItem(n, 3, LPSTR_TEXTCALLBACK, I_IMAGECALLBACK);
-		m_list.AddItem(n, 4, LPSTR_TEXTCALLBACK, I_IMAGECALLBACK);
+		//m_list.AddItem(n, 3, LPSTR_TEXTCALLBACK, I_IMAGECALLBACK);
+		//m_list.AddItem(n, 4, LPSTR_TEXTCALLBACK, I_IMAGECALLBACK);
 
 		iCtr++;
 		CPidlMgr::Delete(lpi); // free PIDL the shell gave you
@@ -87,10 +88,11 @@ void CColumnPane::InitLV(){
 
 	// Create list view columns
 	m_list.InsertColumn(0, _T("Name"), LVCFMT_LEFT, 100, 0);
-	m_list.InsertColumn(1, _T("Size"), LVCFMT_RIGHT, 30, 1);
-	m_list.InsertColumn(2, _T("Type"), LVCFMT_LEFT, 20, 2);
-	m_list.InsertColumn(3, _T("Modified"), LVCFMT_LEFT, 30, 3);
-	m_list.InsertColumn(4, _T("Attributes"), LVCFMT_RIGHT, 20, 4);
+	m_list.InsertColumn(1, _T("Size"), LVCFMT_RIGHT, 50, 1);
+	m_list.InsertColumn(2, _T("Modified"), LVCFMT_LEFT, 50, 3);
+	//m_list.InsertColumn(2, _T("Type"), LVCFMT_LEFT, 20, 2);
+	//m_list.InsertColumn(3, _T("Modified"), LVCFMT_LEFT, 30, 3);
+	//m_list.InsertColumn(4, _T("Attributes"), LVCFMT_RIGHT, 20, 4);
 
 	// Set list view image lists
 	m_list.SetImageList(hImageList, LVSIL_NORMAL);
@@ -310,6 +312,76 @@ LRESULT CColumnPane::OnDblClick(LPNMHDR pnmh){
 	return 0;
 }
 
+LRESULT CColumnPane::OnNMRClick(int, LPNMHDR pnmh, BOOL&)
+{
+	POINT pt = { 0, 0 };
+	::GetCursorPos(&pt);
+	POINT ptClient = pt;
+	if(pnmh->hwndFrom != NULL)
+		::ScreenToClient(pnmh->hwndFrom, &ptClient);
+	
+	if(pnmh->hwndFrom == m_list.m_hWnd){
+		LVHITTESTINFO lvhti = { 0 };
+		lvhti.pt = ptClient;
+		m_list.HitTest(&lvhti);
+		if ((lvhti.flags & LVHT_ONITEMLABEL) != 0){
+			LVITEM lvi = { 0 };
+			lvi.mask = LVIF_PARAM;
+			lvi.iItem = lvhti.iItem;
+			if (m_list.GetItem(&lvi) != FALSE){
+				LPLVITEMDATA lptvid = (LPLVITEMDATA)lvi.lParam;
+				if (lptvid != NULL){
+					// Parent of this is RowContainer, whose parent is the splitter, whose parent is the main form.
+					HWND hwnd = ::GetParent(::GetParent(::GetParent(*this)));
+					TCHAR buf[MAX_PATH];
+					::GetWindowText(hwnd, buf, MAX_PATH);
+					OnContextMenu(hwnd, spParentFolder, m_pidl, pt);
+				}
+			}
+		}
+	}
+
+	return 0L;
+}
+/*
+BOOL CColumnPane::DoContextMenu(HWND hWnd, LPSHELLFOLDER lpsfParent, LPITEMIDLIST lpi, POINT point){
+	CComPtr<IContextMenu> spContextMenu;
+	HRESULT hr = lpsfParent->GetUIObjectOf(hWnd, 1, (const struct _ITEMIDLIST**)&lpi, IID_IContextMenu, 0, (LPVOID*)&spContextMenu);
+	if(FAILED(hr))
+		return FALSE;
+
+	HMENU hMenu = ::CreatePopupMenu();
+	if(hMenu == NULL)
+		return FALSE;
+
+	// Get the context menu for the item.
+	hr = spContextMenu->QueryContextMenu(hMenu, 0, 1, 0x7FFF, CMF_EXPLORE);
+	if(FAILED(hr))
+		return FALSE;
+
+	int idCmd = ::TrackPopupMenu(hMenu, TPM_LEFTALIGN | TPM_RETURNCMD | TPM_RIGHTBUTTON, point.x, point.y, 0, hWnd, NULL);
+
+	if (idCmd != 0){
+		USES_CONVERSION;
+
+		// Execute the command that was selected.
+		CMINVOKECOMMANDINFO cmi = { 0 };
+		cmi.cbSize = sizeof(CMINVOKECOMMANDINFO);
+		cmi.fMask = 0;
+		cmi.hwnd = hWnd;
+		cmi.lpVerb = T2CA(MAKEINTRESOURCE(idCmd - 1));
+		cmi.lpParameters = NULL;
+		cmi.lpDirectory = NULL;
+		cmi.nShow = SW_SHOWNORMAL;
+		cmi.dwHotKey = 0;
+		cmi.hIcon = NULL;
+		hr = spContextMenu->InvokeCommand(&cmi);
+	}
+
+	::DestroyMenu(hMenu);
+
+	return TRUE;
+}*/
 
 LRESULT CColumnPane::OnLVItemClick(int, LPNMHDR pnmh, BOOL&){
 	if(pnmh->hwndFrom != m_list.m_hWnd)
@@ -376,6 +448,15 @@ LRESULT CColumnPane::OnLVGetDispInfo(int, LPNMHDR pnmh, BOOL&){
 		DWORD_PTR dwRet = ::SHGetFileInfo((LPCTSTR)pidlTemp, 0, &sfi, sizeof(SHFILEINFO), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
 		plvdi->item.iImage = (dwRet != 0) ? sfi.iIcon : -1;
 	}
+
+	static const int subitem_map[5] = {
+		0,  // col 0 of LV is name
+		1,  // col 1 of LV is size
+		3,  // col 2 of LV is date modified (which is index 3 of GetDetailsOf)
+		-1,
+		-1
+	};
+
 	if (plvdi->item.iSubItem == 0 && (plvdi->item.mask & LVIF_TEXT) ){   // File Name
 		STRRET str = { STRRET_CSTR };
 		if (lplvid->spParentFolder->GetDisplayNameOf(lplvid->lpi, SHGDN_NORMAL, &str) == NOERROR){
@@ -406,7 +487,7 @@ LRESULT CColumnPane::OnLVGetDispInfo(int, LPNMHDR pnmh, BOOL&){
 		sd.cxChar = 15;
 		
 		// The subitem number determines which column we are interested in
-		hr = spFolder2->GetDetailsOf(lplvid->lpi, plvdi->item.iSubItem, &sd);
+		hr = spFolder2->GetDetailsOf(lplvid->lpi, subitem_map[plvdi->item.iSubItem], &sd);
 		if(FAILED(hr)){ return hr; }
 
 		if(sd.str.uType == STRRET_WSTR){

@@ -3,6 +3,10 @@
 // Used by CVBrowser.rc
 //
 #define IDD_ABOUTBOX                    100
+#define IDR_STATUS_PANE_MESSAGE         110
+#define IDR_STATUS_PANE_ATTRIBUTES      111
+#define IDR_STATUS_PANE_NUM_ITEMS       112
+#define IDR_STATUS_PANE_DISK_FREE       113
 #define IDR_MAINFRAME                   128
 #define IDW_ADDRESS_COMBO               129
 #define IDR_ADDRESSBAR_TOOLBAR          203
