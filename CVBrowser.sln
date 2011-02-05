@@ -1,7 +1,7 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CVBrowser", "CVBrowser.vcproj", "{9663FFB7-2CC5-4448-99A8-08732026552D}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CVBrowser", "CVBrowser.vcxproj", "{9663FFB7-2CC5-4448-99A8-08732026552D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
