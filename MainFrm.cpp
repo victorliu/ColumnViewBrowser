@@ -7,6 +7,7 @@
 
 #include "aboutdlg.h"
 #include "MainFrm.h"
+#include "CPidlMgr.h"
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg)
 {
@@ -67,12 +68,11 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 		// Compute the width and height
 		UINT cx = (nWidth + 8) * sizeFont.cx;
 		UINT cy = nHeight * sizeFont.cy;
-		m_cmbAddress.Create(m_hWndToolBar, rcDefault, NULL, WS_CHILD|WS_VISIBLE|WS_VSCROLL|WS_TABSTOP|CBS_DROPDOWN | CBS_AUTOHSCROLL);
+		m_cmbAddress.Create(m_hWndToolBar, rcDefault, NULL, WS_CHILD|WS_VISIBLE|WS_VSCROLL|WS_TABSTOP|CBS_DROPDOWN | CBS_AUTOHSCROLL, 0, m_nAddressBarID);
 		m_cmbAddress.SetFont(m_fontAddress);
 	}
 	AddSimpleReBarBandCtrl(m_hWndToolBar, m_cmbAddress, 0, NULL, TRUE, 0, TRUE);
-	m_cmbAddress.AddString(_T("Address"));
-	m_cmbAddress.SetCurSel(0);
+	m_cmbAddress.SetCueBannerText(_T("Address"));
 
 	CreateSimpleStatusBar();
 	UIAddToolBar(hWndToolBar);
@@ -334,4 +334,45 @@ void OnContextMenu(HWND hwnd, LPSHELLFOLDER lpsfParent, LPITEMIDLIST lpi, POINT 
 		}
 		pcm->Release();
 	}
+}
+
+LRESULT CMainFrame::OnAddressUpdate(int /*id*/, LPNMHDR lParam, BOOL &bHandled){
+	CColumnPane::LPNMLISTVIEWSELECTPIDL plvsp = (CColumnPane::LPNMLISTVIEWSELECTPIDL)lParam;
+	TCHAR buffer[MAX_PATH];
+	BOOL address_obtained = FALSE;
+
+	do{
+		CComPtr<IShellFolder> pShellFolder;
+		if(S_OK != plvsp->parent_folder->BindToObject(plvsp->selected_pidl, NULL, IID_IShellFolder, (void**)&pShellFolder)){
+			break;
+		}
+
+		CComPtr<IPersistFolder2> spPersistFolder2;
+		if(S_OK != pShellFolder->QueryInterface(IID_IPersistFolder2, (void**)&spPersistFolder2)){
+			break;
+		}
+
+		LPITEMIDLIST lpi;
+		spPersistFolder2->GetCurFolder(&lpi);
+
+		SHGetPathFromIDList(lpi, buffer);
+		m_cmbAddress.DeleteItem(0);
+		m_cmbAddress.AddItem(buffer, 0, 0, 0, 0);
+		m_cmbAddress.SetCurSel(0);
+		CPidlMgr::Delete(lpi);
+	}while(0);
+
+	if(!address_obtained){
+	}
+	bHandled = TRUE;
+	return 0;
+}
+
+LRESULT CMainFrame::OnAddressChanged(int /*id*/, LPNMHDR lParam, BOOL &bHandled){
+	// Browse to address
+	NMCBEENDEDIT *pnmcbeendedit = (NMCBEENDEDIT*)lParam;
+	if(pnmcbeendedit->fChanged && CBENF_RETURN == pnmcbeendedit->iWhy){
+		m_rowMain.BrowseToPath(pnmcbeendedit->szText);
+	}
+	return 0;
 }

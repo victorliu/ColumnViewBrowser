@@ -20,11 +20,12 @@ protected:
 public:
 
 	enum{
+		m_nAddressUpdateNotification = 1,
 		m_nPaneBaseID = 100 // must be last element!
 	};
 	typedef struct tagCreateParams{
 		LPITEMIDLIST root_pidl;
-	} CreateParams, *LPCreateParams;
+	} CreateParams, *LPCreateParams;	
 
 	BEGIN_MSG_MAP_EX(CRowContainer)
 		MSG_WM_USER_PANE_RESIZE(OnPaneResize)
@@ -67,8 +68,9 @@ public:
 	// On item deselection, drop all panes after the pane in which the item was deselected
 	// On item selection, make sure all panes after the pane in which the selection are removed, and add the new one
 	void RemovePanesAfter(HWND hPane);
-	void AppendPane(CComPtr<IShellFolder> parent, LPITEMIDLIST pidl); // pidl follows move semantics, should be a full path PIDL
+	void AppendPane(LPSHELLFOLDER parent, LPITEMIDLIST pidl); // pidl follows move semantics, should be a full path PIDL
 	void NewRootPane(LPITEMIDLIST pidl); // pidl follows move semantics
+	void BrowseToPath(LPTSTR path);
 
 	LRESULT OnPaneFocused(int id, LPNMHDR lParam, BOOL &bHandled);
 	LRESULT OnPaneItemSelected(int id, LPNMHDR lParam, BOOL &bHandled);

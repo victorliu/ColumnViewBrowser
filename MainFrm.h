@@ -18,7 +18,8 @@ public:
 
 	enum{
 		m_nRootsListID = 100,
-		m_nRowContainerID
+		m_nRowContainerID,
+		m_nAddressBarID
 	};
 	BEGIN_UPDATE_UI_MAP(CMainFrame)
 		UPDATE_ELEMENT(ID_VIEW_TOOLBAR, UPDUI_MENUPOPUP)
@@ -43,12 +44,14 @@ public:
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
 		COMMAND_CODE_HANDLER(CBN_SELCHANGE, OnSelChange)
 		NOTIFY_HANDLER(m_nRootsListID, LVN_ITEMCHANGED, OnRootsItemChanged)
+		NOTIFY_HANDLER(m_nAddressBarID, CBEN_ENDEDIT, OnAddressChanged)
+		NOTIFY_CODE_HANDLER(CRowContainer::m_nAddressUpdateNotification, OnAddressUpdate)
 
 		CHAIN_COMMANDS_MEMBER(m_rowMain)
 		//MSG_WM_ERASEBKGND(OnEraseBkgnd)
 		CHAIN_MSG_MAP(CUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
-        REFLECT_NOTIFICATIONS()
+        //REFLECT_NOTIFICATIONS()
 	END_MSG_MAP()
 
 
@@ -84,6 +87,8 @@ public:
 	LRESULT OnAppAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 
 	LRESULT OnRootsItemChanged(int /*id*/, LPNMHDR lParam, BOOL &bHandled);
+	LRESULT OnAddressUpdate(int /*id*/, LPNMHDR lParam, BOOL &bHandled);
+	LRESULT OnAddressChanged(int /*id*/, LPNMHDR lParam, BOOL &bHandled);
 protected:
 	CSplitterWindow m_wndSplit;
 	CCVRootsList m_lstRoots;
@@ -91,7 +96,7 @@ protected:
 	CToolBarCtrl m_tbAddressBar;
 	CMultiPaneStatusBarCtrl m_status;
 
-	CComboBox m_cmbAddress;
+	CComboBoxEx m_cmbAddress;
 	CFont m_fontAddress;
 
 	void SetPaneWidths(int* arrWidths, int nPanes);

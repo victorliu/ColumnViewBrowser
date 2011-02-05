@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "RowContainer.h"
 #include "CPidlMgr.h"
+#include <stack>
 /*
 BOOL CRowContainer::PreTranslateMessage(MSG* pMsg){
 	if(WM_MOUSEWHEEL == pMsg->message){
@@ -208,7 +209,7 @@ void CRowContainer::RemovePanesAfter(HWND hPane){
 		m_panes.erase(current);
 	}
 }
-void CRowContainer::AppendPane(CComPtr<IShellFolder> parent, LPITEMIDLIST pidl){
+void CRowContainer::AppendPane(LPSHELLFOLDER parent, LPITEMIDLIST pidl){
 	RECT rc, crc;
 	GetClientRect(&crc);
 	CopyRect(&rc, &crc);
@@ -240,6 +241,16 @@ void CRowContainer::NewRootPane(LPITEMIDLIST pidl){
 		LPSHELLFOLDER pIDesktop;
 		if(S_OK == SHGetDesktopFolder(&pIDesktop)){
 			AppendPane(CComPtr<IShellFolder>(pIDesktop), pidl);
+			// need to notify MainFrm to update address bar
+			{
+				CColumnPane::NMLISTVIEWSELECTPIDL nmhdr;
+				nmhdr.parent_folder = pIDesktop;
+				nmhdr.selected_pidl = pidl;
+				nmhdr.hdr.code = m_nAddressUpdateNotification;
+				nmhdr.hdr.idFrom = GetDlgCtrlID();
+				nmhdr.hdr.hwndFrom = m_hWnd;
+				GetParent().SendMessage(WM_NOTIFY, (WPARAM)nmhdr.hdr.idFrom, (LPARAM)&nmhdr);
+			}
 		}
 	}
 	UpdateScrollBar(TRUE);
@@ -251,6 +262,16 @@ LRESULT CRowContainer::OnPaneItemSelected(int id, LPNMHDR lParam, BOOL &bHandled
 	RemovePanesAfter(hFrom);
 	AppendPane(plvsp->parent_folder, plvsp->selected_pidl);
 
+	// need to notify MainFrm to update address bar
+	{
+		CColumnPane::NMLISTVIEWSELECTPIDL nmhdr;
+		nmhdr.parent_folder = plvsp->parent_folder;
+		nmhdr.selected_pidl = plvsp->selected_pidl;
+		nmhdr.hdr.code = m_nAddressUpdateNotification;
+		nmhdr.hdr.idFrom = GetDlgCtrlID();
+		nmhdr.hdr.hwndFrom = m_hWnd;
+		GetParent().SendMessage(WM_NOTIFY, (WPARAM)nmhdr.hdr.idFrom, (LPARAM)&nmhdr);
+	}
 	UpdateScrollBar(TRUE);
 	return 0;
 }
@@ -321,4 +342,36 @@ CColumnPane* CRowContainer::GetPane(int index){
 		++j;
 	}
 	return NULL;
+}
+
+void CRowContainer::BrowseToPath(LPTSTR path){
+
+	LPSHELLFOLDER psfParent;
+
+	if(SUCCEEDED(SHGetDesktopFolder(&psfParent))){
+		LPITEMIDLIST pidl;
+		SFGAOF sfgaoOut = 0;
+		if(SUCCEEDED(psfParent->ParseDisplayName(NULL, NULL, path, NULL, &pidl, &sfgaoOut))){
+			// Call SHGetDesktopFolder to obtain IShellFolder for the desktop folder.
+			LPITEMIDLIST curpidl = pidl;
+			if(NULL != curpidl){
+				// Trim off drive letter part of PIDL
+				RemoveAllPanes();
+				do{
+					LPITEMIDLIST curpidlcopy = CPidlMgr::Copy(curpidl,1);
+					LPSHELLFOLDER pShellFolder;
+
+					if(S_OK != psfParent->BindToObject(curpidlcopy, NULL, IID_IShellFolder, (void**)&pShellFolder)){
+						break;
+					}
+					AppendPane(psfParent, curpidlcopy);
+					psfParent->Release();
+					psfParent = pShellFolder;
+				}while(NULL != (curpidl = CPidlMgr::GetNextItem(curpidl)));
+				UpdateScrollBar(TRUE);
+				CPidlMgr::Delete(pidl);
+			}
+		}
+		psfParent->Release();
+	}
 }
