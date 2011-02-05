@@ -84,30 +84,54 @@ LPITEMIDLIST CPidlMgr::GetLastItem(LPCITEMIDLIST pidl)
 	return pidlLast;
 }
 
-LPITEMIDLIST CPidlMgr::Copy(LPCITEMIDLIST pidlSrc)
+LPITEMIDLIST CPidlMgr::Copy(LPCITEMIDLIST pidlSrc, DWORD len)
 {
 	LPITEMIDLIST pidlTarget = NULL;
 	UINT Size = 0;
 
-	if (pidlSrc == NULL)
-		return NULL;
+	if (pidlSrc == NULL){ return NULL; }
+	if(0 == len){
+		// Allocate memory for the new PIDL.
+		Size = GetByteSize(pidlSrc);
+		LPMALLOC pMalloc;
+		SHGetMalloc(&pMalloc);
+		pidlTarget = (LPITEMIDLIST) pMalloc->Alloc(Size);
+		pMalloc->Release();
 
-	// Allocate memory for the new PIDL.
-	Size = GetByteSize(pidlSrc);
-	LPMALLOC pMalloc;
-	SHGetMalloc(&pMalloc);
-	pidlTarget = (LPITEMIDLIST) pMalloc->Alloc(Size);
-	pMalloc->Release();
+		if(pidlTarget == NULL){ return NULL; }
 
-	if (pidlTarget == NULL)
-		return NULL;
+		// Copy the source PIDL to the target PIDL.
+		::ZeroMemory(pidlTarget,Size);
+		::CopyMemory(pidlTarget, pidlSrc, Size);
+	}else{
+		UINT CopySize = 0;
+		do{ // get size
+			UINT Count = 0;
+			LPITEMIDLIST pidlTemp = (LPITEMIDLIST) pidlSrc;
 
-	// Copy the source PIDL to the target PIDL.
-	//memset((void*)pidlTarget,0,Size);
-	::ZeroMemory(pidlTarget,Size);
+			ATLASSERT(pidlSrc != NULL);
+			if(!pidlSrc){ break; }
 
-	::CopyMemory(pidlTarget, pidlSrc, Size);
+			while (pidlTemp->mkid.cb != 0 && Count < len){
+				Size += pidlTemp->mkid.cb;
+				pidlTemp = GetNextItem(pidlTemp);
+				Count++;
+			}
+			CopySize = Size;
 
+			// add the size of the NULL terminating ITEMIDLIST
+			Size += sizeof(ITEMIDLIST);
+		}while(0);
+		LPMALLOC pMalloc;
+		SHGetMalloc(&pMalloc);
+		pidlTarget = (LPITEMIDLIST) pMalloc->Alloc(Size);
+		pMalloc->Release();
+		if(pidlTarget == NULL){ return NULL; }
+
+		// Copy the source PIDL to the target PIDL.
+		::ZeroMemory(pidlTarget,Size);
+		::CopyMemory(pidlTarget, pidlSrc, CopySize);
+	}
 	return pidlTarget;
 }
 

@@ -28,7 +28,7 @@ public:
 	static UINT GetByteSize(LPCITEMIDLIST pidl);
 	static bool IsSingle(LPCITEMIDLIST pidl);
 	static LPITEMIDLIST Concatenate(LPCITEMIDLIST, LPCITEMIDLIST); // ILCombine
-	static LPITEMIDLIST Copy(LPCITEMIDLIST pidlSrc); // ILCline
+	static LPITEMIDLIST Copy(LPCITEMIDLIST pidlSrc, DWORD len = 0); // ILCline
 
 	// Retrieve the item type (see above)
 	static ITEM_TYPE GetItemType(LPCITEMIDLIST pidl);
