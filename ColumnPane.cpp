@@ -7,6 +7,10 @@
 
 LRESULT CColumnPane::FillLV(){
 	// Populate list
+	
+	// Use WM_SETREDRAW to disable redrawing during the population
+	m_list.SetRedraw(FALSE);
+	
 	LPSHELLFOLDER pShellFolder;
 	if(S_OK != spParentFolder->BindToObject(m_pidl, NULL, IID_IShellFolder, (void**)&pShellFolder)){
 		return FALSE;
@@ -68,6 +72,8 @@ LRESULT CColumnPane::FillLV(){
 	//SortData sd(m_nSort, m_bReverseSort);
 	SortData sd(0, false);
 	m_list.SortItems(CColumnPane::ListViewCompareProc, (LPARAM)&sd);
+	m_list.SetRedraw(TRUE);
+	m_list.Invalidate(TRUE);
 	return TRUE;
 }
 void CColumnPane::InitLV(){
