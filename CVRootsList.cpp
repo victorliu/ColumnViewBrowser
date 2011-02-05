@@ -119,7 +119,7 @@ void CCVRootsList::Init(){
 	nmlv.hdr.code = LVN_ITEMCHANGED;
 	nmlv.iItem = best_item_so_far;
 	nmlv.uNewState = LVIS_SELECTED;
-	PostMessage(WM_NOTIFY, nmlv.hdr.idFrom, (LPARAM)&nmlv) ;
+	PostMessage(WM_NOTIFY, nmlv.hdr.idFrom, (LPARAM)&nmlv);
 }
 
 void CCVRootsList::OnDestroy(){
